@@ -1,4 +1,5 @@
-﻿import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { Bot, User } from "lucide-react";
 import { parseRfq } from "../api";
 
 const starterMessages = [
@@ -108,7 +109,6 @@ export default function ChatPanel({ onFields, currentFields, onCollapse }) {
           <div>
             <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Chatbot</p>
             <h2 className="font-display text-2xl text-ink">RFQ Assistant</h2>
-            <p className="mt-1 text-sm text-slate-500">Live assistant to capture RFQ details.</p>
           </div>
         </div>
       </div>
@@ -117,13 +117,27 @@ export default function ChatPanel({ onFields, currentFields, onCollapse }) {
         {messages.map((message, index) => (
           <div
             key={`${message.role}-${index}`}
-            className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm ${
-              message.role === "user"
-                ? "chat-bubble-user ml-auto"
-                : "chat-bubble-bot"
+            className={`flex items-end gap-2 ${
+              message.role === "user" ? "justify-end" : "justify-start"
             }`}
           >
-            {message.content}
+            {message.role !== "user" ? (
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm">
+                <Bot className="h-4 w-4" />
+              </span>
+            ) : null}
+            <div
+              className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-sm ${
+                message.role === "user" ? "chat-bubble-user" : "chat-bubble-bot"
+              }`}
+            >
+              {message.content}
+            </div>
+            {message.role === "user" ? (
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-tide/30 bg-tide/10 text-tide shadow-sm">
+                <User className="h-4 w-4" />
+              </span>
+            ) : null}
           </div>
         ))}
       </div>
