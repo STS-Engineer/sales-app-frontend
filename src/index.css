@@ -1,0 +1,189 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Hide native password reveal icons (e.g., Edge) to avoid double eyes */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  font-family: "DM Sans", sans-serif;
+  background-color: #c5c5c4;
+  background-image: radial-gradient(circle at top, rgba(4, 110, 175, 0.2), transparent 55%),
+    radial-gradient(circle at 15% 90%, rgba(239, 120, 7, 0.18), transparent 45%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(197, 197, 196, 0.94) 60%);
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  background: rgba(255, 255, 255, 0.84);
+  backdrop-filter: blur(18px);
+}
+
+.card {
+  background: white;
+  border: 1px solid rgba(88, 88, 88, 0.16);
+  border-radius: 24px;
+  box-shadow: 0 20px 45px rgba(4, 110, 175, 0.18);
+}
+
+.glow-pill {
+  background: rgba(239, 120, 7, 0.18);
+  border: 1px solid rgba(239, 120, 7, 0.5);
+  color: #7a4a14;
+}
+
+.gradient-button {
+  background: linear-gradient(135deg, #046eaf, #0e4e78);
+  color: white;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.gradient-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(4, 110, 175, 0.28);
+}
+
+.gradient-button:active {
+  transform: translateY(0);
+}
+
+.chat-bubble-user {
+  background: #0e4e78;
+  color: white;
+  position: relative;
+}
+
+.chat-bubble-bot {
+  background: #f2f2f1;
+  border: 1px solid rgba(88, 88, 88, 0.16);
+  position: relative;
+}
+
+.chat-bubble-user::after {
+  content: "";
+  position: absolute;
+  right: -6px;
+  bottom: 10px;
+  width: 12px;
+  height: 12px;
+  background: #0e4e78;
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+
+.chat-bubble-bot::after {
+  content: "";
+  position: absolute;
+  left: -6px;
+  bottom: 10px;
+  width: 12px;
+  height: 12px;
+  background: #f2f2f1;
+  transform: rotate(45deg);
+  border-radius: 2px;
+  border-left: 1px solid rgba(88, 88, 88, 0.16);
+  border-bottom: 1px solid rgba(88, 88, 88, 0.16);
+}
+
+@layer components {
+  .input-field {
+    @apply rounded-2xl border border-slate-300/60 bg-white/90 px-4 py-3 text-sm font-medium text-ink shadow-sm transition placeholder:text-slate-400 focus:border-tide focus:outline-none focus:ring-2 focus:ring-sun/20;
+  }
+
+  .textarea-field {
+    @apply rounded-2xl border border-slate-300/60 bg-white/90 px-4 py-3 text-sm font-medium text-ink shadow-sm transition placeholder:text-slate-400 focus:border-tide focus:outline-none focus:ring-2 focus:ring-sun/20;
+  }
+
+  .outline-button {
+    @apply rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-tide/60 hover:text-ink;
+  }
+
+  .back-button {
+    @apply inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:shadow-md;
+    border-color: #ef7807;
+    background: #ef7807;
+  }
+
+  .back-button:hover {
+    border-color: #d56705;
+    background: #d56705;
+  }
+
+  .signout-button {
+    @apply inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 shadow-sm transition hover:border-red-300 hover:bg-red-100 hover:shadow-md;
+  }
+
+  .next-button {
+    @apply inline-flex items-center gap-2 rounded-xl border border-tide/40 bg-tide/10 px-6 py-3 text-sm font-semibold text-tide shadow-sm transition hover:border-tide/60 hover:bg-tide/20 hover:shadow-md;
+  }
+
+  .prev-button {
+    @apply inline-flex items-center gap-2 rounded-xl border border-sun/40 bg-sun/10 px-6 py-3 text-sm font-semibold text-sun shadow-sm transition hover:border-sun/60 hover:bg-sun/20 hover:shadow-md;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold;
+  }
+
+  .collapse-toggle {
+    @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200/80 bg-white/95 text-slate-500 shadow-sm transition hover:border-tide/40 hover:bg-tide/5 hover:text-tide hover:shadow-md focus:outline-none focus:ring-2 focus:ring-tide/30;
+  }
+
+  .pipeline-shell {
+    @apply w-full overflow-x-auto overflow-y-hidden rounded-2xl border border-slate-200/70 bg-transparent p-0 shadow-none sm:overflow-hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .pipeline-bar {
+    @apply flex min-w-[860px] items-stretch gap-0 sm:min-w-0;
+  }
+
+  .pipeline-step {
+    @apply relative min-w-0 flex-[1_1_0%] select-none px-3 py-2 text-center text-[9px] font-semibold uppercase tracking-[0.14em] leading-tight text-white transition hover:brightness-105 sm:px-4 sm:py-3 sm:text-[11px] sm:tracking-[0.16em];
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%, 14px 50%);
+    margin-left: -10px;
+  }
+
+  .pipeline-step:first-child {
+    margin-left: 0;
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%);
+  }
+
+  .pipeline-step:last-child {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 14px 50%);
+  }
+
+  .pipeline-step-complete {
+    background: #1f9d6b;
+  }
+
+  .pipeline-step-active {
+    background: #046eaf;
+  }
+
+  .pipeline-step-terminal {
+    background: #c0392b;
+    color: #fff;
+  }
+
+  .pipeline-step-idle {
+    background: #bfc2c5;
+    color: #3f3f3f;
+  }
+
+  .chat-resize-handle {
+    @apply absolute left-2 top-1/2 z-10 hidden h-24 w-5 -translate-y-1/2 cursor-col-resize items-center justify-center rounded-full border border-slate-200/70 bg-white/90 shadow-sm transition hover:border-tide/40 hover:bg-tide/5 lg:flex;
+    touch-action: none;
+  }
+}
