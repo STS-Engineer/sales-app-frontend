@@ -1,4 +1,4 @@
-﻿@tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -371,7 +371,6 @@ body {
     transform: translateY(-4px);
     opacity: 1;
   }
-}
 
 @layer components {
   .input-field {
