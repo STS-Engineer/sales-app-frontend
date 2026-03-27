@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout.jsx";
-import { addPendingUser, getOwnerEmail } from "../utils/userStore.js";
+import { register } from "../api";
 
 const EyeIcon = ({ open }) => (
   <svg
@@ -30,7 +30,6 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [status, setStatus] = useState(null);
-  const ownerEmail = useMemo(() => getOwnerEmail(), []);
 
   const handleChange = (event) => {
     setForm((prev) => ({ ...prev, [event.target.name]: event.target.value }));
@@ -47,44 +46,20 @@ export default function Register() {
       return;
     }
     setLoading(true);
-    const requestPayload = {
-      id: `req-${Date.now()}`,
-      name: form.name,
-      email: form.email,
-      requestedAt: new Date().toISOString()
-    };
-    const result = addPendingUser(requestPayload);
-    if (!result.ok) {
+    try {
+      await register({ email: form.email, password: form.password });
+      setStatus({
+        type: "success",
+        message:
+          "Account created. Your access is pending owner approval before you can log in."
+      });
+    } catch (error) {
       const message =
-        result.reason === "pending"
-          ? "Your request is already pending owner approval."
-          : result.reason === "approved"
-            ? "This user is already approved. You can log in."
-            : "Unable to submit your request. Please try again.";
+        error?.status === 400
+          ? "This email is already registered."
+          : "Unable to create the account. Please try again.";
       setStatus({ type: "error", message });
-      setLoading(false);
-      return;
     }
-    const subject = `New user approval request: ${form.name || form.email}`;
-    const body = `Hello Owner,
-
-A new user just requested access to the RFQ app.
-
-Name: ${form.name || "N/A"}
-Email: ${form.email}
-
-Next step:
-1) Open the app
-2) Click your profile in the TopBar
-3) Select "User validation"
-4) Assign a role and confirm
-
-Thanks,
-AVO Carbon RFQ`;
-    setStatus({
-      type: "success",
-      message: `Request sent to ${ownerEmail}. You will be able to log in once approved.`
-    });
     setLoading(false);
   };
 

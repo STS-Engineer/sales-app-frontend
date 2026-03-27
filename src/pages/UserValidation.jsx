@@ -1,46 +1,68 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import TopBar from "../components/TopBar.jsx";
-import {
-  approveUser,
-  getApprovedUsers,
-  getCurrentUserRole,
-  getPendingUsers,
-  isOwnerEmail
-} from "../utils/userStore.js";
+import { listAllUsers, listPendingUsers, updateUserRole } from "../api";
+import { getUserProfile } from "../utils/session.js";
 
-const ROLE_OPTIONS = ["Commercial", "Zone Manager"];
+const ROLE_OPTIONS = [
+  { value: "COMMERCIAL", label: "Commercial" },
+  { value: "VALIDATOR", label: "Validator" },
+  { value: "COSTING_TEAM", label: "Costing team" },
+  { value: "PLANT_MANAGER", label: "Plant manager" },
+  { value: "PLM", label: "PLM" },
+  { value: "OWNER", label: "Owner" }
+];
 
 export default function UserValidation() {
   const [pendingUsers, setPendingUsers] = useState([]);
-  const [roleByEmail, setRoleByEmail] = useState({});
-  const [openSelectEmail, setOpenSelectEmail] = useState(null);
+  const [roleById, setRoleById] = useState({});
+  const [openSelectId, setOpenSelectId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [approvedCount, setApprovedCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const dropdownRef = useRef(null);
-  const storedEmail =
-    typeof window !== "undefined" ? localStorage.getItem("rfq_user_email") || "" : "";
-  const isOwner =
-    getCurrentUserRole() === "owner" || isOwnerEmail(storedEmail);
+  const profile = getUserProfile();
+  const isOwner = profile.role === "OWNER";
 
   useEffect(() => {
-    setPendingUsers(getPendingUsers());
-    setApprovedCount(getApprovedUsers().length);
-  }, []);
+    if (!isOwner) {
+      return;
+    }
+    const loadUsers = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const [pending, all] = await Promise.all([
+          listPendingUsers(),
+          listAllUsers()
+        ]);
+        setPendingUsers(Array.isArray(pending) ? pending : []);
+        const allCount = Array.isArray(all) ? all.length : 0;
+        const pendingCountLocal = Array.isArray(pending) ? pending.length : 0;
+        setApprovedCount(Math.max(allCount - pendingCountLocal, 0));
+      } catch (err) {
+        setError("Unable to load users. Please refresh.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadUsers();
+  }, [isOwner]);
 
   useEffect(() => {
-    if (!openSelectEmail) {
+    if (!openSelectId) {
       return;
     }
     const handlePointer = (event) => {
       if (dropdownRef.current?.contains(event.target)) {
         return;
       }
-      setOpenSelectEmail(null);
+      setOpenSelectId(null);
     };
     const handleKey = (event) => {
       if (event.key === "Escape") {
-        setOpenSelectEmail(null);
+        setOpenSelectId(null);
       }
     };
     document.addEventListener("pointerdown", handlePointer);
@@ -49,28 +71,36 @@ export default function UserValidation() {
       document.removeEventListener("pointerdown", handlePointer);
       document.removeEventListener("keydown", handleKey);
     };
-  }, [openSelectEmail]);
+  }, [openSelectId]);
 
   const pendingCount = pendingUsers.length;
 
-  const handleRoleChange = (email, value) => {
-    setRoleByEmail((prev) => ({ ...prev, [email]: value }));
+  const handleRoleChange = (userId, value) => {
+    setRoleById((prev) => ({ ...prev, [userId]: value }));
   };
 
-  const handleApprove = (email) => {
-    const role = roleByEmail[email] || ROLE_OPTIONS[0];
-    approveUser(email, role);
-    setPendingUsers(getPendingUsers());
-    setApprovedCount(getApprovedUsers().length);
+  const handleApprove = async (user) => {
+    const roleValue = roleById[user.user_id] || ROLE_OPTIONS[0].value;
+    try {
+      await updateUserRole(user.user_id, roleValue);
+      const pending = await listPendingUsers();
+      const all = await listAllUsers();
+      setPendingUsers(Array.isArray(pending) ? pending : []);
+      const allCount = Array.isArray(all) ? all.length : 0;
+      const pendingCountLocal = Array.isArray(pending) ? pending.length : 0;
+      setApprovedCount(Math.max(allCount - pendingCountLocal, 0));
+    } catch (err) {
+      setError("Unable to approve this user. Please try again.");
+    }
   };
 
   const formattedUsers = useMemo(
     () =>
       pendingUsers.map((user) => ({
         ...user,
-        displayName: user.name || user.email,
-        requestedAtLabel: user.requestedAt
-          ? new Date(user.requestedAt).toLocaleString()
+        displayName: user.email,
+        requestedAtLabel: user.created_at
+          ? new Date(user.created_at).toLocaleString()
           : "N/A"
       })),
     [pendingUsers]
@@ -180,6 +210,16 @@ export default function UserValidation() {
                     </p>
                   </div>
                 </div>
+                {error ? (
+                  <div className="rounded-2xl border border-coral/30 bg-coral/10 px-4 py-3 text-sm text-coral">
+                    {error}
+                  </div>
+                ) : null}
+                {loading ? (
+                  <div className="rounded-2xl border border-slate-200/70 bg-white/70 px-4 py-3 text-sm text-slate-500">
+                    Loading users...
+                  </div>
+                ) : null}
 
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white/95 p-4 shadow-soft">
@@ -229,17 +269,18 @@ export default function UserValidation() {
                   </div>
                 </div>
 
-                {filteredUsers.length === 0 ? (
+                {filteredUsers.length === 0 && !loading ? (
                   <div className="rounded-2xl border border-dashed border-slate-200/80 bg-white/70 p-6 text-center text-sm text-slate-500">
                     {searchTerm
                       ? "No users match your search."
                       : "No pending users right now."}
                   </div>
-                ) : (
+                ) : null}
+                {filteredUsers.length > 0 ? (
                   <div className="space-y-4">
                     {filteredUsers.map((user) => (
                       <div
-                        key={user.email}
+                        key={user.user_id}
                         className="flex flex-col gap-4 rounded-2xl border border-slate-200/70 bg-white/95 px-5 py-4 shadow-soft sm:flex-row sm:items-center sm:justify-between"
                       >
                         <div>
@@ -252,25 +293,27 @@ export default function UserValidation() {
                         <div className="flex flex-wrap items-center gap-3">
                           <div
                             className="relative"
-                            ref={openSelectEmail === user.email ? dropdownRef : null}
+                            ref={openSelectId === user.user_id ? dropdownRef : null}
                           >
                             <button
                               type="button"
                               className="input-field min-w-[160px] text-left"
                               onClick={() =>
-                                setOpenSelectEmail((prev) =>
-                                  prev === user.email ? null : user.email
+                                setOpenSelectId((prev) =>
+                                  prev === user.user_id ? null : user.user_id
                                 )
                               }
                               aria-haspopup="listbox"
-                              aria-expanded={openSelectEmail === user.email}
+                              aria-expanded={openSelectId === user.user_id}
                             >
                               <span className="block pr-6">
-                                {roleByEmail[user.email] || ROLE_OPTIONS[0]}
+                                {ROLE_OPTIONS.find(
+                                  (role) => role.value === roleById[user.user_id]
+                                )?.label || ROLE_OPTIONS[0].label}
                               </span>
                               <span
                                 className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition ${
-                                  openSelectEmail === user.email ? "-rotate-180" : ""
+                                  openSelectId === user.user_id ? "-rotate-180" : ""
                                 }`}
                               >
                                 <svg
@@ -284,23 +327,24 @@ export default function UserValidation() {
                                 </svg>
                               </span>
                             </button>
-                            {openSelectEmail === user.email ? (
+                            {openSelectId === user.user_id ? (
                               <div
                                 className="absolute right-0 z-10 mt-2 w-full overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-card"
                                 role="listbox"
                               >
                                 {ROLE_OPTIONS.map((role) => {
                                   const isActive =
-                                    (roleByEmail[user.email] || ROLE_OPTIONS[0]) === role;
+                                    (roleById[user.user_id] || ROLE_OPTIONS[0].value) ===
+                                    role.value;
                                   return (
                                     <button
-                                      key={role}
+                                      key={role.value}
                                       type="button"
                                       role="option"
                                       aria-selected={isActive}
                                       onClick={() => {
-                                        handleRoleChange(user.email, role);
-                                        setOpenSelectEmail(null);
+                                        handleRoleChange(user.user_id, role.value);
+                                        setOpenSelectId(null);
                                       }}
                                       className={`flex w-full items-center justify-between px-3 py-2 text-sm font-semibold transition ${
                                         isActive
@@ -308,7 +352,7 @@ export default function UserValidation() {
                                           : "text-slate-600 hover:bg-slate-50"
                                       }`}
                                     >
-                                      <span>{role}</span>
+                                      <span>{role.label}</span>
                                       {isActive ? (
                                         <span className="text-tide">
                                           <svg
@@ -331,7 +375,7 @@ export default function UserValidation() {
                           <button
                             type="button"
                             className="gradient-button rounded-xl px-4 py-3 text-sm font-semibold shadow-soft"
-                            onClick={() => handleApprove(user.email)}
+                            onClick={() => handleApprove(user)}
                           >
                             Confirm
                           </button>
@@ -339,7 +383,7 @@ export default function UserValidation() {
                       </div>
                     ))}
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
           )}

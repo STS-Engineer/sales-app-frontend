@@ -2,7 +2,8 @@
 import { Link } from "react-router-dom";
 import TopBar from "../components/TopBar.jsx";
 import RfqTable from "../components/RfqTable.jsx";
-import { fetchRfqs } from "../api";
+import { listRfqs } from "../api";
+import { mapRfqToRow } from "../utils/rfq.js";
 
 const STATUS_OPTIONS = [
   { key: "RFQ", label: "RFQ" },
@@ -95,9 +96,9 @@ export default function Dashboard() {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await fetchRfqs();
+        const data = await listRfqs();
         if (Array.isArray(data)) {
-          setRfqs(data);
+          setRfqs(data.map(mapRfqToRow));
         } else {
           setRfqs([]);
         }
@@ -130,6 +131,7 @@ export default function Dashboard() {
         rfq.id,
         rfq.customer,
         rfq.client,
+        rfq.productName,
         rfq.productLine,
         rfq.item,
         rfq.application,

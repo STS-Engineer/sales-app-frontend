@@ -1,12 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout.jsx";
-import { login } from "../api";
-import {
-  findApprovedUser,
-  isOwnerEmail,
-  setCurrentUserRole
-} from "../utils/userStore.js";
+import { getMe, login } from "../api";
+import { setUserProfile, setCurrentUserRole } from "../utils/session.js";
 
 const EyeIcon = ({ open }) => (
   <svg
@@ -35,36 +31,33 @@ export default function Login() {
     setForm((prev) => ({ ...prev, [event.target.name]: event.target.value }));
   };
 
-  const persistUser = (displayName) => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("rfq_user_email", form.email);
-      localStorage.setItem(
-        "rfq_user_name",
-        displayName || form.email.split("@")[0] || form.email
-      );
-    }
-  };
-
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
-    const approvedUser = findApprovedUser(form.email);
-    const isOwner = isOwnerEmail(form.email);
-    if (!isOwner && !approvedUser) {
-      setError("Your account is pending owner approval.");
-      return;
-    }
     setLoading(true);
     try {
       await login(form);
+      const profile = await getMe();
+      setUserProfile({
+        email: profile.email,
+        role: profile.role,
+        name: profile.email?.split("@")[0]
+      });
+      setCurrentUserRole(profile.role);
+      navigate("/dashboard");
     } catch (err) {
-      setError("Login failed. Please check your credentials and try again.");
+      if (err?.status === 403) {
+        setError("Your account is pending owner approval.");
+      } else if (err?.status === 401) {
+        setError("Login failed. Please check your credentials and try again.");
+      } else if (err?.status === 408) {
+        setError("Login timed out. Please try again.");
+      } else {
+        setError("Login failed. Please try again.");
+      }
+    } finally {
+      setLoading(false);
     }
-    const role = isOwner ? "owner" : approvedUser?.role || "user";
-    setCurrentUserRole(role);
-    persistUser(approvedUser?.name);
-    navigate("/dashboard");
-    setLoading(false);
   };
 
   return (

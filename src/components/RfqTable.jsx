@@ -22,11 +22,12 @@ const statusStyles = {
 export default function RfqTable({ rows }) {
   return (
     <div className="card overflow-x-auto">
-      <table className="min-w-[980px] w-full text-left text-sm">
+      <table className="min-w-[1080px] w-full text-left text-sm">
         <thead className="bg-slate-100/80 text-xs uppercase tracking-widest text-slate-500">
           <tr>
             <th className="px-6 py-4">RFQ ID</th>
             <th className="px-6 py-4">Customer</th>
+            <th className="px-6 py-4">Product name</th>
             <th className="px-6 py-4">Product line</th>
             <th className="px-6 py-4">Application</th>
             <th className="px-6 py-4">TO Total</th>
@@ -45,6 +46,7 @@ export default function RfqTable({ rows }) {
               <td className="px-6 py-4 font-medium text-slate-700">
                 {row.customer || row.client || "—"}
               </td>
+              <td className="px-6 py-4">{row.productName || "—"}</td>
               <td className="px-6 py-4">{row.productLine || row.item || "—"}</td>
               <td className="px-6 py-4">{row.application || "—"}</td>
               <td className="px-6 py-4 font-medium text-slate-700">
